@@ -1,0 +1,37 @@
+from django.db import models
+from django.contrib.auth import get_user_model
+from api.models.vehicle import Vehicle
+
+User = get_user_model()
+
+class Booking(models.Model):
+    TYPE_CHOICES = [
+        ("from_airport", "From Airport"),
+        ("to_airport", "To Airport"),
+        ("point_to_point", "Point to Point"),
+        ("hourly", "Hourly As Directed"),
+        ("wine_tour", "Wine Tour"),
+        ("tour", "Tour"),
+        ("prom", "Prom"),
+        ("wedding", "Wedding"),
+    ]
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("confirmed", "Confirmed"),
+        ("canceled", "Canceled"),
+        ("completed", "Completed"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    type_of_ride = models.CharField(max_length=30, choices=TYPE_CHOICES)
+    pickup_address = models.TextField()
+    dropoff_address = models.TextField()
+    pickup_datetime = models.DateTimeField()
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
+    distance = models.FloatField(null=True, blank=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    payment_status = models.BooleanField(default=False)
+    number_of_hours = models.PositiveIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
