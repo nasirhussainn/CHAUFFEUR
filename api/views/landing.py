@@ -1,6 +1,5 @@
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
+# views/landing.py
+from django.shortcuts import render
 
-@api_view(["GET"])
 def landing_view(request):
-    return Response({"message": "Welcome to CHAUFFEUR Backend API 🚗"})
+    return render(request, 'landing.html')  # Render an HTML template
