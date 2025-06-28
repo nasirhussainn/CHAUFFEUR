@@ -14,3 +14,4 @@ from .tax import *
 from .user import *
 from .email_verification import EmailVerification
 from .password_reset_token import PasswordResetToken
+from .type_of_ride import *
