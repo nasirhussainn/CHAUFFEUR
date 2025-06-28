@@ -1,20 +1,11 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from api.models.vehicle import Vehicle
+from .type_of_ride import TypeOfRide
 
 User = get_user_model()
 
 class Booking(models.Model):
-    TYPE_CHOICES = [
-        ("from_airport", "From Airport"),
-        ("to_airport", "To Airport"),
-        ("point_to_point", "Point to Point"),
-        ("hourly", "Hourly As Directed"),
-        ("wine_tour", "Wine Tour"),
-        ("tour", "Tour"),
-        ("prom", "Prom"),
-        ("wedding", "Wedding"),
-    ]
     STATUS_CHOICES = [
         ("pending", "Pending"),
         ("confirmed", "Confirmed"),
@@ -22,8 +13,8 @@ class Booking(models.Model):
         ("completed", "Completed"),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    type_of_ride = models.CharField(max_length=30, choices=TYPE_CHOICES)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    type_of_ride = models.ForeignKey(TypeOfRide, on_delete=models.SET_NULL, null=True, related_name='bookings')
     pickup_address = models.TextField()
     dropoff_address = models.TextField()
     pickup_datetime = models.DateTimeField()

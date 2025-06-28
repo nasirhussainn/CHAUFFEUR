@@ -11,3 +11,4 @@ from .payment import *
 from .flight_info import *
 from .contact import *
 from .tax import *
+from .type_of_ride import *
