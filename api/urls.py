@@ -1,8 +1,8 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
 from api.views.vehicle_view import VehicleViewSet
-from api.views.user_registration_view import UserRegistrationView, VerifyEmailView
-from api.views.user_login_view import UserLoginView
+from api.views.user_registration_view import UserRegistrationView, VerifyEmailView, UserRegistrationsByPeriodView
+from api.views.user_login_view import UserLoginView, MostRecentLoginsView
 from api.views.password_reset_request_view import PasswordResetRequestView
 from api.views.password_reset_confirm_view import PasswordResetConfirmView
 from api.views.admin_user_list_view import AdminUserListView
@@ -29,5 +29,7 @@ urlpatterns = [
     path('auth/password-reset/', PasswordResetRequestView.as_view(), name='password-reset'),
     path('auth/password-reset-confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     path('admin/users/', AdminUserListView.as_view(), name='admin-user-list'),
+    path('analytics/most-recent-logins/', MostRecentLoginsView.as_view(), name='most-recent-logins'),
+    path('analytics/user-registrations-by-period/', UserRegistrationsByPeriodView.as_view(), name='user-registrations-by-period'),
     path('', include(router.urls)),
 ]

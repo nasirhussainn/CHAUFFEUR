@@ -13,9 +13,6 @@ from ..models.password_reset_token import PasswordResetToken
 
 User = get_user_model()
 
-# Set the email backend to console in password reset request view for development.
-settings.EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 class PasswordResetRequestView(APIView):
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
