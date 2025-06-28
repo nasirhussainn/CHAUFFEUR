@@ -12,9 +12,6 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 import uuid
 
-# For development, use Django console email backend
-settings.EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 User = get_user_model()
 
 class UserRegistrationView(APIView):
@@ -52,6 +49,12 @@ class UserRegistrationView(APIView):
                                 from_email=settings.DEFAULT_FROM_EMAIL,
                                 recipient_list=[user.email],
                             )
+                            print("EMAIL_BACKEND:", settings.EMAIL_BACKEND)
+                            print("EMAIL_HOST:", settings.EMAIL_HOST)
+                            print("EMAIL_PORT:", settings.EMAIL_PORT)
+                            print("EMAIL_HOST_USER:", settings.EMAIL_HOST_USER)
+                            print("EMAIL_USE_SSL:", settings.EMAIL_USE_SSL)
+                            print("DEFAULT_FROM_EMAIL:", settings.DEFAULT_FROM_EMAIL)
                             return Response({'detail': 'A new verification link has been sent to your email.'}, status=status.HTTP_200_OK)
                         else:
                             return Response({'detail': 'User with this email already exists and is active.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -104,3 +107,29 @@ class VerifyEmailView(APIView):
         user.is_active = True
         user.save()
         return Response({'detail': 'Email verified. You can now log in.'}, status=status.HTTP_200_OK)
+
+class UserRegistrationsByPeriodView(APIView):
+    def get(self, request):
+        period = request.query_params.get('period')
+        if not period:
+            return Response({'error': "Missing 'period' query parameter (week or month)."}, status=status.HTTP_400_BAD_REQUEST)
+        now = timezone.now()
+        if period == 'week':
+            start_date = now - timedelta(days=7)
+        elif period == 'month':
+            start_date = now - timedelta(days=30)
+        else:
+            return Response({'error': "Invalid period. Use 'week' or 'month'."}, status=status.HTTP_400_BAD_REQUEST)
+        users = User.objects.filter(date_joined__gte=start_date)
+        user_data = [
+            {
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'phone': getattr(user, 'phone', None),
+                'gender': getattr(user, 'gender', None),
+                'date_joined': user.date_joined,
+            }
+            for user in users
+        ]
+        return Response({'period': period, 'user_registrations': user_data})

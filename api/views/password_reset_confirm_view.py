@@ -10,9 +10,6 @@ from ..serializers.password_reset_confirm_serializer import PasswordResetConfirm
 
 User = get_user_model()
 
-# Set the email backend to console for development
-settings.EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 class PasswordResetConfirmView(APIView):
     def get(self, request):
         try:
