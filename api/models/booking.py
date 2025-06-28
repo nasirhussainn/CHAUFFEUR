@@ -1,9 +1,8 @@
 from django.db import models
 from api.models.vehicle import Vehicle
-
 from .type_of_ride import TypeOfRide
 from api.models.tax import TaxRate
-
+from django.conf import settings
 class Booking(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
@@ -12,7 +11,7 @@ class Booking(models.Model):
         ("completed", "Completed"),
     ]
 
-    user = models.ForeignKey('api.User', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     type_of_ride = models.ForeignKey(TypeOfRide, on_delete=models.SET_NULL, null=True, related_name='bookings')
     pickup_address = models.TextField()
     dropoff_address = models.TextField()

@@ -25,10 +25,15 @@ class PasswordResetRequestView(APIView):
                 user = User.objects.get(email=email, is_active=True)
             except User.DoesNotExist:
                 return Response({'detail': 'If the email exists, a reset link has been sent.'}, status=status.HTTP_200_OK)
-            # Create a new password reset token
-            token_obj = PasswordResetToken.objects.create(
+            # Update or create a password reset token for this user
+            token_obj, _ = PasswordResetToken.objects.update_or_create(
                 user=user,
-                expiry=timezone.now() + timedelta(minutes=10)
+                used=False,
+                defaults={
+                    'token': uuid.uuid4(),
+                    'expiry': timezone.now() + timedelta(minutes=10),
+                    'used': False,
+                }
             )
             reset_url = request.build_absolute_uri(
                 reverse('api:password-reset-confirm') + f'?token={token_obj.token}'

@@ -28,6 +28,15 @@ class UserRegistrationView(APIView):
                     if user_qs.exists():
                         user = user_qs.first()
                         if not user.is_active:
+                            # Update user fields if changed
+                            updated = False
+                            for field in ['first_name', 'last_name', 'phone', 'gender']:
+                                new_value = serializer.validated_data.get(field)
+                                if new_value is not None and getattr(user, field) != new_value:
+                                    setattr(user, field, new_value)
+                                    updated = True
+                            if updated:
+                                user.save()
                             # User exists but is inactive, update verification
                             verification, _ = EmailVerification.objects.get_or_create(user=user)
                             verification.token = uuid.uuid4()

@@ -14,6 +14,21 @@ User = get_user_model()
 settings.EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 class PasswordResetConfirmView(APIView):
+    def get(self, request):
+        try:
+            token = request.GET.get('token')
+            if not token:
+                return Response({'detail': 'Token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                token_obj = PasswordResetToken.objects.get(token=token, used=False)
+            except PasswordResetToken.DoesNotExist:
+                return Response({'detail': 'Invalid or expired token.'}, status=status.HTTP_400_BAD_REQUEST)
+            if token_obj.is_expired():
+                return Response({'detail': 'Token expired. Please request a new password reset.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Token is valid.'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'detail': f'Unexpected error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if serializer.is_valid():
