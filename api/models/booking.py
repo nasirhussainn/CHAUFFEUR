@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from api.models.vehicle import Vehicle
 from .type_of_ride import TypeOfRide
-
+from api.models.tax import TaxRate
 User = get_user_model()
 
 class Booking(models.Model):

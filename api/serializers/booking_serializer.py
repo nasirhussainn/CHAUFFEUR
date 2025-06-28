@@ -5,7 +5,7 @@ from django.utils import timezone
 from decimal import Decimal, ROUND_HALF_UP
 from api.models import (
     Booking, Passenger, Stop, ChildSeat, PromoCode,
-    Comment, FlightInformation
+    Comment, FlightInformation, TaxRate
 )
 
 # -- Subserializers --
@@ -95,9 +95,25 @@ class BookingSerializer(serializers.ModelSerializer):
         )
         meet_greet = flight_info_data.get('meet_and_greet') if isinstance(flight_info_data, dict) else False
         meet_greet_fee = Decimal("50.00") if meet_greet else Decimal("0.00")
+
         subtotal = base_price + child_seat_fee + meet_greet_fee
-        total_price = subtotal * Decimal("1.20")
-        validated_data['price'] = total_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        # Add service fee (20%)
+        with_service_fee = subtotal * Decimal("1.20")
+
+        # Add tax from TaxRate model
+        try:
+            tax_record = TaxRate.objects.first()
+            tax_percentage = tax_record.rate_percentage if tax_record else Decimal("0.00")
+        except TaxRate.DoesNotExist:
+            tax_percentage = Decimal("0.00")
+
+        # Calculate tax and final total
+        tax_amount = with_service_fee * (tax_percentage / Decimal("100.00"))
+        final_price = with_service_fee + tax_amount
+
+        # Assign final rounded price
+        validated_data['price'] = final_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
         booking = Booking.objects.create(**validated_data)
 
