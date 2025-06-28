@@ -11,3 +11,6 @@ from .payment import *
 from .flight_info import *
 from .contact import *
 from .tax import *
+from .user import *
+from .email_verification import EmailVerification
+from .password_reset_token import PasswordResetToken

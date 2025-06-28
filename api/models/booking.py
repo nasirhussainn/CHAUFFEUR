@@ -1,8 +1,6 @@
 from django.db import models
-from django.contrib.auth import get_user_model
 from api.models.vehicle import Vehicle
 
-User = get_user_model()
 
 class Booking(models.Model):
     TYPE_CHOICES = [
@@ -22,7 +20,7 @@ class Booking(models.Model):
         ("completed", "Completed"),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey('api.User', on_delete=models.CASCADE)
     type_of_ride = models.CharField(max_length=30, choices=TYPE_CHOICES)
     pickup_address = models.TextField()
     dropoff_address = models.TextField()
