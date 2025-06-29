@@ -10,6 +10,10 @@ from datetime import timedelta
 import uuid
 from ..serializers.password_reset_request_serializer import PasswordResetRequestSerializer
 from ..models.password_reset_token import PasswordResetToken
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from utils.url_helpers import build_full_url
+
 
 User = get_user_model()
 
@@ -32,14 +36,22 @@ class PasswordResetRequestView(APIView):
                     'used': False,
                 }
             )
-            reset_url = request.build_absolute_uri(
-                reverse('api:password-reset-confirm') + f'?token={token_obj.token}'
-            )
-            send_mail(
-                subject='Password Reset Request',
-                message=f'Click the link to reset your password: {reset_url}',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-            )
+            path = reverse('api:password-reset-confirm') + f'?token={token_obj.token}'
+            reset_url = build_full_url(request, path)
+            subject = 'Password Reset Request'
+            from_email = settings.DEFAULT_FROM_EMAIL
+            to_email = [user.email]
+            context = {
+                'user': user,
+                'reset_url': reset_url,
+            }
+
+            text_content = f"Hi {user.first_name or 'User'},\n\nYou can reset your password using the link below:\n{reset_url}\n\nIf you didn't request this, please ignore this message."
+            html_content = render_to_string('emails/password_reset_email.html', context)
+
+            email = EmailMultiAlternatives(subject, text_content, from_email, to_email)
+            email.attach_alternative(html_content, "text/html")
+            email.send()
+
             return Response({'detail': 'If the email exists, a reset link has been sent.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

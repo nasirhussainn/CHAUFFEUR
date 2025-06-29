@@ -11,6 +11,10 @@ from ..models.email_verification import EmailVerification
 from django.contrib.auth import get_user_model
 from django.db import transaction
 import uuid
+import traceback
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from utils.url_helpers import build_full_url
 
 User = get_user_model()
 
@@ -40,21 +44,19 @@ class UserRegistrationView(APIView):
                             verification.expiry = timezone.now() + timedelta(minutes=10)
                             verification.is_verified = False
                             verification.save()
-                            verification_url = request.build_absolute_uri(
-                                reverse('api:verify-email') + f'?token={verification.token}'
-                            )
-                            send_mail(
-                                subject='Verify your email',
-                                message=f'Click the link to verify your email: {verification_url}',
-                                from_email=settings.DEFAULT_FROM_EMAIL,
-                                recipient_list=[user.email],
-                            )
-                            print("EMAIL_BACKEND:", settings.EMAIL_BACKEND)
-                            print("EMAIL_HOST:", settings.EMAIL_HOST)
-                            print("EMAIL_PORT:", settings.EMAIL_PORT)
-                            print("EMAIL_HOST_USER:", settings.EMAIL_HOST_USER)
-                            print("EMAIL_USE_SSL:", settings.EMAIL_USE_SSL)
-                            print("DEFAULT_FROM_EMAIL:", settings.DEFAULT_FROM_EMAIL)
+                            path = reverse('api:verify-email') + f'?token={verification.token}'
+                            verification_url = build_full_url(request, path)
+                            subject = 'Verify your email'
+                            from_email = settings.DEFAULT_FROM_EMAIL
+                            to_email = [user.email]
+                            context = {'user': user, 'verification_url': verification_url}
+
+                            text_content = f"Hi {user.first_name or 'User'},\n\nPlease verify your email:\n{verification_url}\n\nThanks,\nTeam"
+                            html_content = render_to_string('emails/verify_email.html', context)
+
+                            email = EmailMultiAlternatives(subject, text_content, from_email, to_email)
+                            email.attach_alternative(html_content, "text/html")
+                            email.send()
                             return Response({'detail': 'A new verification link has been sent to your email.'}, status=status.HTTP_200_OK)
                         else:
                             return Response({'detail': 'User with this email already exists and is active.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -62,18 +64,23 @@ class UserRegistrationView(APIView):
                     user = serializer.save()
                     expiry = timezone.now() + timedelta(minutes=10)
                     verification = EmailVerification.objects.create(user=user, expiry=expiry)
-                    verification_url = request.build_absolute_uri(
-                        reverse('api:verify-email') + f'?token={verification.token}'
-                    )
-                    send_mail(
-                        subject='Verify your email',
-                        message=f'Click the link to verify your email: {verification_url}',
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[user.email],
-                    )
+                    path = reverse('api:verify-email') + f'?token={verification.token}'
+                    verification_url = build_full_url(request, path)
+
+                    subject = 'Verify your email'
+                    from_email = settings.DEFAULT_FROM_EMAIL
+                    to_email = [user.email]
+                    context = {'user': user, 'verification_url': verification_url}
+
+                    text_content = f"Hi {user.first_name or 'User'},\n\nPlease verify your email:\n{verification_url}\n\nThanks,\nTeam"
+                    html_content = render_to_string('emails/verify_email.html', context)
+
+                    email = EmailMultiAlternatives(subject, text_content, from_email, to_email)
+                    email.attach_alternative(html_content, "text/html")
+                    email.send()
             except Exception as e:
+                traceback.print_exc()  
                 return Response({'detail': f'User registration failed: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            return Response({'detail': 'User registered. Please check your email to verify your account.'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyEmailView(APIView):
@@ -90,15 +97,22 @@ class VerifyEmailView(APIView):
             verification.token = uuid.uuid4()
             verification.expiry = timezone.now() + timedelta(minutes=10)
             verification.save()
-            verification_url = request.build_absolute_uri(
-                reverse('api:verify-email') + f'?token={verification.token}'
-            )
-            send_mail(
-                subject='Verify your email',
-                message=f'Click the link to verify your email: {verification_url}',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[verification.user.email],
-            )
+            path = reverse('api:verify-email') + f'?token={verification.token}'
+            verification_url = build_full_url(request, path)
+            subject = 'Verify your email'
+            from_email = settings.DEFAULT_FROM_EMAIL
+            to_email = [verification.user.email]
+            context = {
+                'user': verification.user,
+                'verification_url': verification_url,
+            }
+
+            text_content = f"Hi {verification.user.first_name or 'User'},\n\nPlease verify your email by clicking the following link:\n{verification_url}\n\nThanks,\nTeam"
+            html_content = render_to_string('emails/verify_email.html', context)
+
+            email = EmailMultiAlternatives(subject, text_content, from_email, to_email)
+            email.attach_alternative(html_content, "text/html")
+            email.send()
             return Response({'detail': 'Verification link expired. A new link has been sent.'}, status=status.HTTP_400_BAD_REQUEST)
         # Mark as verified and activate user
         verification.is_verified = True
