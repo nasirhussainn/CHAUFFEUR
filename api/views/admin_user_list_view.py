@@ -11,4 +11,7 @@ class AdminUserListView(APIView):
     def get(self, request):
         users = User.objects.all()
         serializer = AdminUserListSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({
+            "message": "User list fetched successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)

@@ -115,7 +115,11 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 5  # Set default items per page
+    'PAGE_SIZE': 5,  # Set default items per page
+    'DEFAULT_RENDERER_CLASSES': [
+        'api.renderers.CustomResponseRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',  # Optional for development
+    ],
 }
 
 MEDIA_URL = '/media/'
