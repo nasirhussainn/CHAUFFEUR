@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from api.models.vehicle import Vehicle, CarImage, CarFeature
 import json
+from django.conf import settings
 
 class VehicleSerializer(serializers.ModelSerializer):
     features = serializers.CharField(write_only=True)
@@ -16,16 +17,31 @@ class VehicleSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
+        request = self.context.get('request')
+
+        if request:
+            scheme = request.scheme
+            host = request.get_host().split(':')[0]
+
+            if not settings.DEBUG:
+                # Only add custom port in production
+                port = settings.CUSTOM_IMAGE_PORT
+                base_url = f"{scheme}://{host}:{port}"
+            else:
+                base_url = request.build_absolute_uri('/')[:-1]  # Default dev behavior
+
+            rep['images'] = [
+                {"id": img.id, "image": f"{base_url}{img.image.url}"}
+                for img in instance.images.all()
+            ]
+        else:
+            rep['images'] = []
+
         rep['features'] = [
             {"id": f.id, "feature": f.feature}
             for f in instance.features.all()
         ]
-        rep['images'] = [
-            {"id": img.id, "image": self.context['request'].build_absolute_uri(img.image.url)}
-            for img in instance.images.all()
-        ]
         return rep
-
     def create(self, validated_data):
         features_raw = validated_data.pop('features', '[]')
         images = validated_data.pop('images', [])
