@@ -22,7 +22,9 @@ class TaxRateViewSet(viewsets.ModelViewSet):
         }, status=response.status_code)
 
     def destroy(self, request, *args, **kwargs):
-        super().destroy(request, *args, **kwargs)
+        instance = self.get_object()
+        self.perform_destroy(instance)
         return Response({
-            "message": "Tax rate deleted successfully."
-        }, status=status.HTTP_204_NO_CONTENT)
+            "message": "Tax rate deleted successfully.",
+        }, status=status.HTTP_200_OK)
+
