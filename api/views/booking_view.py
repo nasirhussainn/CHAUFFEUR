@@ -7,7 +7,7 @@ from api.models import Booking
 from api.serializers.booking_serializer import BookingSerializer
 from rest_framework.permissions import IsAuthenticated
 class BookingViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
 
