@@ -4,6 +4,7 @@ from rest_framework import status
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import get_user_model
 from django.middleware.csrf import get_token
+from rest_framework_simplejwt.tokens import RefreshToken
 from ..serializers.user_login_serializer import UserLoginSerializer
 
 User = get_user_model()
@@ -28,27 +29,29 @@ class UserLoginView(APIView):
                 if user is not None:
                     try:
                         login(request, user)
-                        # Set session expiry to 1 day (86400 seconds) of inactivity
                         request.session.set_expiry(86400)
-                        # Generate a fresh CSRF token
                         csrf_token = get_token(request)
+                        # Generate JWT tokens
+                        refresh = RefreshToken.for_user(user)
+                        access_token = str(refresh.access_token)
+                        refresh_token = str(refresh)
                     except Exception as e:
                         return Response({"message": f"Login failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                     response = Response({
-                        "message": "Login successful."
+                        "message": "Login successful.",
+                        "access": access_token,
+                        "refresh": refresh_token
                     }, status=status.HTTP_200_OK)
-                    # Set sessionid and csrftoken cookies securely for cross-domain
                     response.set_cookie(
                         key='csrftoken',
                         value=csrf_token,
-                        max_age=24,  # 1 day in seconds
-                        expires=None,   # Let Django/browser calculate expiry from max_age
-                        httponly=False,  # CSRF token must be readable by JS
-                        secure=True,     # Must be True for SameSite=None
+                        max_age=86400,  # 1 day in seconds
+                        expires=None,
+                        httponly=False,
+                        secure=True,
                         samesite='None',
                     )
-                    # sessionid is set by Django automatically, but you can enforce cookie params in settings
                     return response
                 else:
                     return Response({"message": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
