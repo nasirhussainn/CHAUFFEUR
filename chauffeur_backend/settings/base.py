@@ -150,3 +150,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8080",
 ]
 CORS_ALLOW_HEADERS = list(default_headers)
+
+# Session and CSRF cookie settings
+SESSION_COOKIE_AGE = 86400  # 1 day in seconds
+SESSION_SAVE_EVERY_REQUEST = True  # Reset expiry on each request
+SESSION_COOKIE_SECURE = True  # Set to True in production
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_AGE = 86400  # 1 day in seconds
