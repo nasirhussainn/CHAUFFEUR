@@ -26,6 +26,4 @@ class ContactViewSet(viewsets.ModelViewSet):
         self.perform_destroy(instance)
         return Response({
             "message": "Contact deleted successfully.",
-            
         }, status=status.HTTP_200_OK)
-
