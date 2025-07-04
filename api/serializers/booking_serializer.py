@@ -140,36 +140,88 @@ class BookingSerializer(serializers.ModelSerializer):
                     "status": "Cannot cancel after 24 hours. Full charge applies."
                 })
 
-        passengers_data = validated_data.pop('passengers', [])
-        stops_data = validated_data.pop('stops', [])
-        child_seats_data = validated_data.pop('child_seats', [])
+        request = self.context.get('request')
+        is_partial = request and request.method == 'PATCH'
+
+        passengers_data = validated_data.pop('passengers', None)
+        stops_data = validated_data.pop('stops', None)
+        child_seats_data = validated_data.pop('child_seats', None)
         promo_code_data = validated_data.pop('promo_code', None)
         flight_info_data = validated_data.pop('flight_info', None)
-        comments_data = validated_data.pop('comments', [])
+        comments_data = validated_data.pop('comments', None)
 
+        # Update scalar fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        instance.passengers.all().delete()
-        for p in passengers_data:
-            Passenger.objects.create(booking=instance, **p)
+        # Append or replace passengers
+        if passengers_data is not None:
+            if not is_partial:
+                instance.passengers.all().delete()
+            for p in passengers_data:
+                Passenger.objects.create(booking=instance, **p)
 
-        instance.stops.all().delete()
-        for s in stops_data:
-            Stop.objects.create(booking=instance, **s)
+        # Append or replace stops
+        if stops_data is not None:
+            if not is_partial:
+                instance.stops.all().delete()
+            for s in stops_data:
+                Stop.objects.create(booking=instance, **s)
 
-        instance.child_seats.all().delete()
-        for seat in child_seats_data:
-            ChildSeat.objects.create(booking=instance, **seat)
+        # Always replace child seats
+        if child_seats_data is not None:
+            instance.child_seats.all().delete()
+            for seat in child_seats_data:
+                ChildSeat.objects.create(booking=instance, **seat)
 
-        instance.comments.all().delete()
-        for c in comments_data:
-            Comment.objects.create(booking=instance, **c)
+        # Append or replace comments
+        if comments_data is not None:
+            if not is_partial:
+                instance.comments.all().delete()
+            for c in comments_data:
+                Comment.objects.create(booking=instance, **c)
 
-        if promo_code_data:
-            PromoCode.objects.update_or_create(booking=instance, defaults=promo_code_data)
-        if flight_info_data:
-            FlightInformation.objects.update_or_create(booking=instance, defaults=flight_info_data)
+        # Always replace promo code
+        if promo_code_data is not None:
+            PromoCode.objects.update_or_create(
+                booking=instance,
+                defaults=promo_code_data
+            )
+
+
+        # Always replace flight info
+        if flight_info_data is not None:
+            instance.flight_info.delete() if hasattr(instance, 'flight_info') else None
+            FlightInformation.objects.create(booking=instance, **flight_info_data)
+
+        # --- Recalculate price if child seats or flight info are updated ---
+        if child_seats_data is not None or flight_info_data is not None:
+            base_price = Decimal(instance.price or 0)
+            child_seat_fee = sum(
+                Decimal("40.00") * Decimal(seat.get("quantity", 1)) for seat in (child_seats_data or [])
+            )
+
+            meet_greet = False
+            if flight_info_data and isinstance(flight_info_data, dict):
+                meet_greet = flight_info_data.get("meet_and_greet", False)
+            elif hasattr(instance, 'flight_info'):
+                meet_greet = instance.flight_info.meet_and_greet
+
+            meet_greet_fee = Decimal("50.00") if meet_greet else Decimal("0.00")
+            subtotal = base_price + child_seat_fee + meet_greet_fee
+            with_service_fee = subtotal * Decimal("1.20")
+
+            try:
+                tax_record = TaxRate.objects.first()
+                tax_percentage = tax_record.rate_percentage if tax_record else Decimal("0.00")
+            except TaxRate.DoesNotExist:
+                tax_percentage = Decimal("0.00")
+
+            tax_amount = with_service_fee * (tax_percentage / Decimal("100.00"))
+            final_price = with_service_fee + tax_amount
+
+            instance.price = final_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            instance.save()
 
         return instance
