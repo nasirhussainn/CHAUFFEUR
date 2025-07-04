@@ -2,10 +2,11 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from api.models import TaxRate
 from api.serializers.tax_rate_serializer import TaxRateSerializer
-
+from api.pagination import DynamicPageNumberPagination  
 class TaxRateViewSet(viewsets.ModelViewSet):
     queryset = TaxRate.objects.all()
     serializer_class = TaxRateSerializer
+    pagination_class = DynamicPageNumberPagination
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)

@@ -12,6 +12,9 @@ from api.views.service_view import ServiceViewSet
 from api.views.service_area_view import ServiceAreaViewSet
 from api.views.tax_rate_view import TaxRateViewSet
 from api.views.contact_view import ContactViewSet
+from api.views.user_me_view import UserMeView
+from api.views.logout_view import LogoutView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 router = DefaultRouter()
 router.register(r'vehicles', VehicleViewSet, basename='vehicle')
@@ -26,10 +29,13 @@ urlpatterns = [
     path('auth/register/', UserRegistrationView.as_view(), name='user-register'),
     path('auth/verify-email/', VerifyEmailView.as_view(), name='verify-email'),
     path('auth/login/', UserLoginView.as_view(), name='user-login'),
+    path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/password-reset/', PasswordResetRequestView.as_view(), name='password-reset'),
     path('auth/password-reset-confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     path('admin/users/', AdminUserListView.as_view(), name='admin-user-list'),
     path('analytics/most-recent-logins/', MostRecentLoginsView.as_view(), name='most-recent-logins'),
     path('analytics/user-registrations-by-period/', UserRegistrationsByPeriodView.as_view(), name='user-registrations-by-period'),
+    path('user/me/', UserMeView.as_view(), name='user-me'),
+    path('user/logout/', LogoutView.as_view(), name='user-logout'),
     path('', include(router.urls)),
 ]

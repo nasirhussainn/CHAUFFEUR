@@ -2,10 +2,11 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from api.models import ServiceArea
 from api.serializers.service_area_serializer import ServiceAreaSerializer
-
+from api.pagination import DynamicPageNumberPagination
 class ServiceAreaViewSet(viewsets.ModelViewSet):
     queryset = ServiceArea.objects.all()
     serializer_class = ServiceAreaSerializer
+    pagination_class = DynamicPageNumberPagination
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)

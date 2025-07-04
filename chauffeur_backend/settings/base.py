@@ -9,7 +9,11 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = ['*']
 from corsheaders.defaults import default_headers
-
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+   
+}
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -20,6 +24,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'api',
     'corsheaders',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 DATABASES = {
@@ -118,8 +123,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 5,  # Set default items per page
+    'DEFAULT_PAGINATION_CLASS': 'api.pagination.DynamicPageNumberPagination',
+    'PAGE_SIZE': 10,  # Set default items per page
     'DEFAULT_RENDERER_CLASSES': [
         'api.renderers.CustomResponseRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # Optional for development

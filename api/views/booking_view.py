@@ -5,10 +5,13 @@ from django.utils import timezone
 from datetime import timedelta
 from api.models import Booking
 from api.serializers.booking_serializer import BookingSerializer
-
+from rest_framework.permissions import IsAuthenticated
+from api.pagination import DynamicPageNumberPagination
 class BookingViewSet(viewsets.ModelViewSet):
+    # permission_classes = [IsAuthenticated]
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
+    pagination_class = DynamicPageNumberPagination
 
     def get_queryset(self):
         queryset = Booking.objects.all()
