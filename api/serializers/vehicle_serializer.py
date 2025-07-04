@@ -4,8 +4,8 @@ import json
 from django.conf import settings
 
 class VehicleSerializer(serializers.ModelSerializer):
-    features = serializers.CharField(write_only=True)
-    images = serializers.ListField(child=serializers.ImageField(), write_only=True)
+    features = serializers.CharField(write_only=True, required=False)
+    images = serializers.ListField(child=serializers.ImageField(), write_only=True, required=False)
 
     class Meta:
         model = Vehicle
@@ -24,11 +24,10 @@ class VehicleSerializer(serializers.ModelSerializer):
             host = request.get_host().split(':')[0]
 
             if not settings.DEBUG:
-                # Only add custom port in production
                 port = settings.CUSTOM_IMAGE_PORT
                 base_url = f"{scheme}://{host}:{port}"
             else:
-                base_url = request.build_absolute_uri('/')[:-1]  # Default dev behavior
+                base_url = request.build_absolute_uri('/')[:-1]
 
             rep['images'] = [
                 {"id": img.id, "image": f"{base_url}{img.image.url}"}
@@ -42,6 +41,7 @@ class VehicleSerializer(serializers.ModelSerializer):
             for f in instance.features.all()
         ]
         return rep
+
     def create(self, validated_data):
         features_raw = validated_data.pop('features', '[]')
         images = validated_data.pop('images', [])
@@ -62,25 +62,36 @@ class VehicleSerializer(serializers.ModelSerializer):
         return vehicle
 
     def update(self, instance, validated_data):
-        features_raw = validated_data.pop('features', '[]')
-        images = validated_data.pop('images', [])
+        features_raw = validated_data.pop('features', None)
+        images = validated_data.pop('images', None)
 
-        try:
-            features = json.loads(features_raw)
-        except json.JSONDecodeError:
-            raise serializers.ValidationError({"features": "Must be a valid JSON list of strings."})
-
+        # Update only provided fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        if features:
-            instance.features.all().delete()
-            for f in features:
-                CarFeature.objects.create(vehicle=instance, feature=f)
+        # Add or replace features
+        if features_raw is not None:
+            try:
+                features = json.loads(features_raw)
+            except json.JSONDecodeError:
+                raise serializers.ValidationError({"features": "Must be a valid JSON list of strings."})
 
-        if images:
-            instance.images.all().delete()
+            request = self.context.get('request')
+            is_partial = request.method == 'PATCH' if request else False
+
+            if not is_partial:
+                # Replace features for PUT
+                instance.features.all().delete()
+
+            # Add new features (no duplicates)
+            existing = set(f.feature for f in instance.features.all())
+            for f in features:
+                if f not in existing:
+                    CarFeature.objects.create(vehicle=instance, feature=f)
+
+        # Add new images (do not delete old ones)
+        if images is not None:
             for img in images:
                 CarImage.objects.create(vehicle=instance, image=img)
 
