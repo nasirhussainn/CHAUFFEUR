@@ -3,11 +3,11 @@ from rest_framework.response import Response
 from api.models.vehicle import Vehicle, CarImage
 from api.serializers.vehicle_serializer import VehicleSerializer
 from rest_framework.decorators import action
-
+from api.pagination import DynamicPageNumberPagination  
 class VehicleViewSet(viewsets.ModelViewSet):
     queryset = Vehicle.objects.prefetch_related('images', 'features').all()
     serializer_class = VehicleSerializer
-
+    pagination_class = DynamicPageNumberPagination
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
         return Response({
