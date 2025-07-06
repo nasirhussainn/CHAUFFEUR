@@ -16,6 +16,8 @@ from api.views.user_me_view import UserMeView
 from api.views.logout_view import LogoutView
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from api.views.payment_views import CreatePaymentIntentView
+
 router = DefaultRouter()
 router.register(r'vehicles', VehicleViewSet, basename='vehicle')
 router.register(r'bookings', BookingViewSet, basename='booking')
@@ -37,5 +39,8 @@ urlpatterns = [
     path('analytics/user-registrations-by-period/', UserRegistrationsByPeriodView.as_view(), name='user-registrations-by-period'),
     path('user/me/', UserMeView.as_view(), name='user-me'),
     path('user/logout/', LogoutView.as_view(), name='user-logout'),
+    
+    path('payments/create-intent/', CreatePaymentIntentView.as_view(), name='create-payment-intent'),
+    
     path('', include(router.urls)),
 ]

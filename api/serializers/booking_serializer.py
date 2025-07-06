@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
-from django.core.mail import send_mail
 from django.utils import timezone
 from decimal import Decimal, ROUND_HALF_UP
 from api.models import (
@@ -23,25 +22,30 @@ class PassengerSerializer(serializers.ModelSerializer):
         model = Passenger
         exclude = ['booking']
 
+
 class StopSerializer(serializers.ModelSerializer):
     class Meta:
         model = Stop
         exclude = ['booking']
+
 
 class ChildSeatSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChildSeat
         exclude = ['booking']
 
+
 class PromoCodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = PromoCode
         exclude = ['booking']
 
+
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         exclude = ['booking']
+
 
 class FlightInfoSerializer(serializers.ModelSerializer):
     meet_and_greet = serializers.BooleanField(required=False, default=False)
@@ -50,19 +54,25 @@ class FlightInfoSerializer(serializers.ModelSerializer):
         model = FlightInformation
         exclude = ['booking']
 
+
 # -- Main Booking Serializer --
 
 class BookingSerializer(serializers.ModelSerializer):
     passengers = PassengerSerializer(many=True)
     stops = StopSerializer(many=True, required=False)
     child_seats = ChildSeatSerializer(many=True, required=False)
-    promo_code = PromoCodeSerializer(required=False)
+    promo_code = serializers.SerializerMethodField()
     flight_info = FlightInfoSerializer(required=False)
     comments = CommentSerializer(many=True, required=False)
 
     class Meta:
         model = Booking
         fields = '__all__'
+
+    def get_promo_code(self, obj):
+        if hasattr(obj, 'promo_code_obj'):
+            return obj.promo_code_obj.promo_code
+        return None
 
     def validate(self, data):
         type_of_ride = data.get('type_of_ride')
@@ -84,9 +94,12 @@ class BookingSerializer(serializers.ModelSerializer):
         passengers_data = validated_data.pop('passengers')
         stops_data = validated_data.pop('stops', [])
         child_seats_data = validated_data.pop('child_seats', [])
-        promo_code_data = validated_data.pop('promo_code', None)
         flight_info_data = validated_data.pop('flight_info', None)
         comments_data = validated_data.pop('comments', [])
+
+        # Extract promo_code manually from request.data since it's a SerializerMethodField
+        request = self.context.get('request')
+        promo_code_data = request.data.get('promo_code') if request else None
 
         # Calculate pricing
         base_price = Decimal(validated_data.get('price', 0))
@@ -97,27 +110,20 @@ class BookingSerializer(serializers.ModelSerializer):
         meet_greet_fee = Decimal("50.00") if meet_greet else Decimal("0.00")
 
         subtotal = base_price + child_seat_fee + meet_greet_fee
-
-        # Add service fee (20%)
         with_service_fee = subtotal * Decimal("1.20")
 
-        # Add tax from TaxRate model
         try:
             tax_record = TaxRate.objects.first()
             tax_percentage = tax_record.rate_percentage if tax_record else Decimal("0.00")
         except TaxRate.DoesNotExist:
             tax_percentage = Decimal("0.00")
 
-        # Calculate tax and final total
         tax_amount = with_service_fee * (tax_percentage / Decimal("100.00"))
         final_price = with_service_fee + tax_amount
-
-        # Assign final rounded price
         validated_data['price'] = final_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
         booking = Booking.objects.create(**validated_data)
 
-        # Save nested records
         for p in passengers_data:
             Passenger.objects.create(booking=booking, **p)
         for s in stops_data:
@@ -127,7 +133,7 @@ class BookingSerializer(serializers.ModelSerializer):
         for c in comments_data:
             Comment.objects.create(booking=booking, **c)
         if promo_code_data:
-            PromoCode.objects.create(booking=booking, **promo_code_data)
+            PromoCode.objects.create(booking=booking, promo_code=promo_code_data)
         if isinstance(flight_info_data, dict) and flight_info_data:
             FlightInformation.objects.create(booking=booking, **flight_info_data)
 
@@ -146,56 +152,48 @@ class BookingSerializer(serializers.ModelSerializer):
         passengers_data = validated_data.pop('passengers', None)
         stops_data = validated_data.pop('stops', None)
         child_seats_data = validated_data.pop('child_seats', None)
-        promo_code_data = validated_data.pop('promo_code', None)
+        promo_code_data = request.data.get('promo_code') if request else None
         flight_info_data = validated_data.pop('flight_info', None)
         comments_data = validated_data.pop('comments', None)
 
-        # Update scalar fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        # Append or replace passengers
         if passengers_data is not None:
             if not is_partial:
                 instance.passengers.all().delete()
             for p in passengers_data:
                 Passenger.objects.create(booking=instance, **p)
 
-        # Append or replace stops
         if stops_data is not None:
             if not is_partial:
                 instance.stops.all().delete()
             for s in stops_data:
                 Stop.objects.create(booking=instance, **s)
 
-        # Always replace child seats
         if child_seats_data is not None:
             instance.child_seats.all().delete()
             for seat in child_seats_data:
                 ChildSeat.objects.create(booking=instance, **seat)
 
-        # Append or replace comments
         if comments_data is not None:
             if not is_partial:
                 instance.comments.all().delete()
             for c in comments_data:
                 Comment.objects.create(booking=instance, **c)
 
-        # Always replace promo code
-        if promo_code_data is not None:
+        if promo_code_data:
             PromoCode.objects.update_or_create(
                 booking=instance,
-                defaults=promo_code_data
+                defaults={"promo_code": promo_code_data}
             )
 
-
-        # Always replace flight info
         if flight_info_data is not None:
-            instance.flight_info.delete() if hasattr(instance, 'flight_info') else None
+            if hasattr(instance, 'flight_info'):
+                instance.flight_info.delete()
             FlightInformation.objects.create(booking=instance, **flight_info_data)
 
-        # --- Recalculate price if child seats or flight info are updated ---
         if child_seats_data is not None or flight_info_data is not None:
             base_price = Decimal(instance.price or 0)
             child_seat_fee = sum(
