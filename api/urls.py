@@ -15,7 +15,7 @@ from api.views.user_me_view import UserMeView
 from api.views.logout_view import LogoutView
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from api.views.payment_views import CreatePaymentIntentView
+from api.views.payment_view import CreateStripeIntentView, ConfirmPaymentView
 
 router = DefaultRouter()
 router.register(r'vehicles', VehicleViewSet, basename='vehicle')
@@ -38,7 +38,8 @@ urlpatterns = [
     path('user/me/', UserMeView.as_view(), name='user-me'),
     path('user/logout/', LogoutView.as_view(), name='user-logout'),
     
-    path('payments/create-intent/', CreatePaymentIntentView.as_view(), name='create-payment-intent'),
-    
+    path('stripe/create-intent/', CreateStripeIntentView.as_view(), name='create-stripe-intent'),
+    path('bookings/<int:booking_id>/payment-confirmed/', ConfirmPaymentView.as_view()),
+
     path('', include(router.urls)),
 ]

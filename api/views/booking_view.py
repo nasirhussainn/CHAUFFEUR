@@ -39,6 +39,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     def bookings_by_status(self, request):
         status_param = request.query_params.get('status')
         user_id = request.query_params.get('user_id')
+        payment_status = request.query_params.get('payment_status')
 
         if not status_param:
             return Response({
@@ -46,8 +47,15 @@ class BookingViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         bookings = Booking.objects.filter(status__iexact=status_param)
+
         if user_id:
             bookings = bookings.filter(user=user_id)
+
+        if payment_status is not None:
+            if payment_status.lower() in ['true', '1']:
+                bookings = bookings.filter(payment_status=True)
+            elif payment_status.lower() in ['false', '0']:
+                bookings = bookings.filter(payment_status=False)
 
         page = self.paginate_queryset(bookings)
         if page is not None:
@@ -57,6 +65,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(bookings, many=True)
         return Response(serializer.data)
 
+    
     @action(detail=False, methods=['get'], url_path='by-period')
     def bookings_by_period(self, request):
         period = request.query_params.get('period')
@@ -88,3 +97,38 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(bookings, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'], url_path='confirm')
+    def confirm_booking(self, request, pk=None):
+        booking = self.get_object()
+
+        if booking.status != 'pending':
+            return Response({
+                "message": "Only pending bookings can be confirmed."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not booking.payment_status:
+            return Response({
+                "message": "Booking cannot be confirmed because payment is not completed."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        booking.status = "confirmed"
+        booking.save()
+        return Response({
+            "message": "Booking has been confirmed successfully."
+        }, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'], url_path='complete') 
+    def complete_booking(self, request, pk=None):
+        booking = self.get_object()
+
+        if booking.status != 'confirmed':
+            return Response({
+                "message": "Only confirmed bookings can be marked as completed."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        booking.status = "completed"
+        booking.save()
+        return Response({
+            "message": "Booking has been marked as completed successfully."
+        }, status=status.HTTP_200_OK)
