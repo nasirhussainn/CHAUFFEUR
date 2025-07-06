@@ -7,5 +7,5 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'email', 'first_name', 'last_name', 'last_login', 'phone', 'is_active', 'is_staff', 'is_superuser', 'date_joined', 'gender'
+            'id', 'username', 'email', 'first_name', 'last_name', 'last_login', 'phone', 'is_active', 'is_staff', 'is_superuser', 'date_joined', 'gender'
         ]

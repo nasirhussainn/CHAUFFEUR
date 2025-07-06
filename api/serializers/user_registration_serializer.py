@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 import re
-
+import uuid
 User = get_user_model()
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -17,12 +17,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = ['email', 'password', 'first_name', 'last_name', 'phone', 'gender']
 
     def create(self, validated_data):
-        # Auto-generate username from email if not provided
-        email = validated_data['email']
-        username = email.split('@')[0]
+        while True:
+            username = f"user_{uuid.uuid4().hex[:16]}"
+            if not User.objects.filter(username=username).exists():
+                break
         user = User.objects.create_user(
             username=username,
-            email=email,
+            email=validated_data['email'],
             password=validated_data['password'],
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
