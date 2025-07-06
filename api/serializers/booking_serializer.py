@@ -6,7 +6,7 @@ from api.models import (
     Booking, Passenger, Stop, ChildSeat, PromoCode,
     Comment, FlightInformation, TaxRate
 )
-
+from api.serializers.payment_serializer import PaymentSerializer
 # -- Subserializers --
 
 class PassengerSerializer(serializers.ModelSerializer):
@@ -64,6 +64,7 @@ class BookingSerializer(serializers.ModelSerializer):
     promo_code = serializers.SerializerMethodField()
     flight_info = FlightInfoSerializer(required=False)
     comments = CommentSerializer(many=True, required=False)
+    payment = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -74,6 +75,14 @@ class BookingSerializer(serializers.ModelSerializer):
             return obj.promo_code_obj.promo_code
         return None
 
+    def get_payment(self, obj):
+            from api.models import Payment
+            try:
+                payment = Payment.objects.get(booking=obj)
+                return PaymentSerializer(payment).data
+            except Payment.DoesNotExist:
+                return None
+            
     def validate(self, data):
         type_of_ride = data.get('type_of_ride', '').lower()
         flight_info = data.get('flight_info')
