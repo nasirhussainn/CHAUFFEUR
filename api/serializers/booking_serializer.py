@@ -75,20 +75,31 @@ class BookingSerializer(serializers.ModelSerializer):
         return None
 
     def validate(self, data):
-        type_of_ride = data.get('type_of_ride')
+        type_of_ride = data.get('type_of_ride', '').lower()
         flight_info = data.get('flight_info')
 
-        if type_of_ride and type_of_ride.name.lower() != 'from airport' and flight_info:
+        ALLOWED_RIDES = [
+            'from-airport', 'to-airport', 'point-to-point', 'hourly-as-directed',
+            'wine-tour', 'tour', 'prom', 'weddings'
+        ]
+
+        if type_of_ride not in ALLOWED_RIDES:
             raise serializers.ValidationError({
-                "flight_info": "Flight information is only allowed for 'from airport' bookings."
+                "type_of_ride": f"Invalid ride type. Must be one of: {', '.join(ALLOWED_RIDES)}"
             })
 
-        if type_of_ride and type_of_ride.name.lower() == 'from airport' and not flight_info:
+        if type_of_ride != 'from-airport' and flight_info:
             raise serializers.ValidationError({
-                "flight_info": "Flight information is required for 'from airport' bookings."
+                "flight_info": "Flight information is only allowed for 'from-airport' bookings."
+            })
+
+        if type_of_ride == 'from-airport' and not flight_info:
+            raise serializers.ValidationError({
+                "flight_info": "Flight information is required for 'from-airport' bookings."
             })
 
         return data
+
 
     def create(self, validated_data):
         passengers_data = validated_data.pop('passengers')

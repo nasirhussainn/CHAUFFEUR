@@ -7,7 +7,6 @@ from api.views.password_reset_request_view import PasswordResetRequestView
 from api.views.password_reset_confirm_view import PasswordResetConfirmView
 from api.views.admin_user_list_view import AdminUserListView
 from api.views.booking_view import BookingViewSet
-from api.views.type_of_ride_view import TypeOfRideViewSet
 from api.views.service_view import ServiceViewSet
 from api.views.service_area_view import ServiceAreaViewSet
 from api.views.tax_rate_view import TaxRateViewSet
@@ -21,7 +20,6 @@ from api.views.payment_views import CreatePaymentIntentView
 router = DefaultRouter()
 router.register(r'vehicles', VehicleViewSet, basename='vehicle')
 router.register(r'bookings', BookingViewSet, basename='booking')
-router.register(r'type-of-ride', TypeOfRideViewSet, basename='type-of-ride')
 router.register(r'services', ServiceViewSet, basename='services')
 router.register(r'service-areas', ServiceAreaViewSet, basename='service-areas')
 router.register(r'tax-rates', TaxRateViewSet, basename='tax-rates')

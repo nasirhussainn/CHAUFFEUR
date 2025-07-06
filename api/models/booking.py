@@ -1,8 +1,8 @@
 from django.db import models
 from api.models.vehicle import Vehicle
-from .type_of_ride import TypeOfRide
 from api.models.tax import TaxRate
 from django.conf import settings
+
 class Booking(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
@@ -11,8 +11,19 @@ class Booking(models.Model):
         ("completed", "Completed"),
     ]
 
+    TYPE_OF_RIDE_CHOICES = [
+        ('from-airport', 'From Airport'),
+        ('to-airport', 'To Airport'),
+        ('point-to-point', 'Point to Point'),
+        ('hourly-as-directed', 'Hourly as Directed'),
+        ('wine-tour', 'Wine Tour'),
+        ('tour', 'Tour'),
+        ('prom', 'Prom'),
+        ('weddings', 'Weddings'),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
-    type_of_ride = models.ForeignKey(TypeOfRide, on_delete=models.SET_NULL, null=True, related_name='bookings')
+    type_of_ride = models.CharField(max_length=50, choices=TYPE_OF_RIDE_CHOICES)
     pickup_address = models.TextField()
     dropoff_address = models.TextField()
     pickup_datetime = models.DateTimeField()
