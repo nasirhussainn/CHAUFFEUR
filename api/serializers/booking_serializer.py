@@ -7,6 +7,7 @@ from api.models import (
     Comment, FlightInformation, TaxRate
 )
 from api.serializers.payment_serializer import PaymentSerializer
+from .user_serializer import UserSerializer
 # -- Subserializers --
 
 class PassengerSerializer(serializers.ModelSerializer):
@@ -58,6 +59,7 @@ class FlightInfoSerializer(serializers.ModelSerializer):
 # -- Main Booking Serializer --
 
 class BookingSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
     passengers = PassengerSerializer(many=True)
     stops = StopSerializer(many=True, required=False)
     child_seats = ChildSeatSerializer(many=True, required=False)
@@ -111,6 +113,10 @@ class BookingSerializer(serializers.ModelSerializer):
 
 
     def create(self, validated_data):
+        request = self.context.get('request')
+        validated_data.pop('user', None)  
+        user = request.user if request and request.user.is_authenticated else None
+        validated_data['user'] = user
         passengers_data = validated_data.pop('passengers')
         stops_data = validated_data.pop('stops', [])
         child_seats_data = validated_data.pop('child_seats', [])
