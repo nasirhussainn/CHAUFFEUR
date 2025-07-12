@@ -2,12 +2,26 @@ from django.db import models
 import os
 from django.dispatch import receiver
 
+from utils.slug import generate_unique_slug
+
+def get_first_n_words(text, n=5):
+    return ' '.join(text.strip().split()[:n])
+
 class ServiceArea(models.Model):
+    slug = models.SlugField(unique=True, blank=True) 
     area_name = models.CharField(max_length=255)
     description = models.TextField()
     image1 = models.ImageField(upload_to='service_areas/')
     image2 = models.ImageField(upload_to='service_areas/', null=True, blank=True)
     content = models.JSONField()
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            short_description = get_first_n_words(self.description, 5)
+            base_value = f"{self.area_name} {short_description}"
+            self.slug = generate_unique_slug(self, base_value)
+        super().save(*args, **kwargs)
+
 
 # Delete files on object delete
 @receiver(models.signals.post_delete, sender=ServiceArea)
