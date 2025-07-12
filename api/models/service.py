@@ -2,13 +2,21 @@ from django.db import models
 import os
 from django.dispatch import receiver
 from django.db.models.signals import post_delete, pre_save
+from utils.slug import generate_unique_slug  
 
 class Service(models.Model):
+    slug = models.SlugField(unique=True, blank=True)
     image_cover = models.ImageField(upload_to='services/')
     image1 = models.ImageField(upload_to='services/')
     image2 = models.ImageField(upload_to='services/', null=True, blank=True)
     description = models.TextField()
     content = models.JSONField()
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = generate_unique_slug(self, self.description[:50])
+        super().save(*args, **kwargs)
+
 
 @receiver(post_delete, sender=Service)
 def delete_service_images_on_delete(sender, instance, **kwargs):
