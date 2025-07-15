@@ -14,10 +14,10 @@ from api.views.contact_view import ContactViewSet
 from api.views.user_me_view import UserMeView
 from api.views.logout_view import LogoutView
 from rest_framework_simplejwt.views import TokenRefreshView
-
 from api.views.payment_view import CreateStripeIntentView, ConfirmPaymentView
-
 from api.views.contact_message_view import ContactMessageView
+from api.views.review_view import ReviewViewSet
+
 
 router = DefaultRouter()
 router.register(r'vehicles', VehicleViewSet, basename='vehicle')
@@ -26,6 +26,7 @@ router.register(r'services', ServiceViewSet, basename='services')
 router.register(r'service-areas', ServiceAreaViewSet, basename='service-areas')
 router.register(r'tax-rates', TaxRateViewSet, basename='tax-rates')
 router.register(r'contacts', ContactViewSet, basename='contacts')
+router.register(r'reviews', ReviewViewSet, basename='review')
 
 urlpatterns = [
     path('auth/register/', UserRegistrationView.as_view(), name='user-register'),
