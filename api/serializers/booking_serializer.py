@@ -8,6 +8,8 @@ from api.models import (
 )
 from api.serializers.payment_serializer import PaymentSerializer
 from .user_serializer import UserSerializer
+from api.serializers.review_serializer import ReviewSerializer
+
 # -- Subserializers --
 
 class PassengerSerializer(serializers.ModelSerializer):
@@ -67,6 +69,7 @@ class BookingSerializer(serializers.ModelSerializer):
     flight_info = FlightInfoSerializer(required=False)
     comments = CommentSerializer(many=True, required=False)
     payment = serializers.SerializerMethodField()
+    review = ReviewSerializer(read_only=True)
 
     class Meta:
         model = Booking

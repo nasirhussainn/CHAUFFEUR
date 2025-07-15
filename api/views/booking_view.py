@@ -7,6 +7,7 @@ from api.models import Booking
 from api.serializers.booking_serializer import BookingSerializer
 from rest_framework.permissions import IsAuthenticated
 from api.pagination import DynamicPageNumberPagination
+
 class BookingViewSet(viewsets.ModelViewSet):
     # permission_classes = [IsAuthenticated]
     queryset = Booking.objects.all()
