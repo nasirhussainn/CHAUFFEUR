@@ -2,17 +2,20 @@ from rest_framework import viewsets, permissions
 from api.models.review import Review
 from api.serializers.review_serializer import ReviewSerializer
 
-class IsOwnerOrReadOnly(permissions.BasePermission):
-    """
-    Custom permission to only allow owners of a review to edit/delete it.
-    """
+# Custom permission
+class IsOwnerOrAdminOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        return obj.user == request.user
+        if request.user.is_staff:  # Admin override
+            return True
+        return obj.user == request.user  # Normal users must own the review
 
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrReadOnly]
 
     def get_queryset(self):
-        # Filter to only show reviews belonging to the current user
-        return Review.objects.filter(user=self.request.user)
+        user = self.request.user
+        if user.is_staff:
+            return Review.objects.all()
+        return Review.objects.filter(user=user)
