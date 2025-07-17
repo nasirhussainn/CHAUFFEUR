@@ -15,6 +15,7 @@ import traceback
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from utils.url_helpers import build_full_url
+from django.http import HttpResponseRedirect
 
 User = get_user_model()
 
@@ -125,7 +126,8 @@ class VerifyEmailView(APIView):
         user.is_active = True
         user.save()
 
-        return Response({"message": "Email verified. You can now log in."}, status=status.HTTP_200_OK)
+        # return Response({"message": "Email verified. You can now log in."}, status=status.HTTP_200_OK)
+        return HttpResponseRedirect("https://nwchauffeur.com/login")
 
 class UserRegistrationsByPeriodView(APIView):
     def get(self, request):
