@@ -166,6 +166,11 @@ class BookingSerializer(serializers.ModelSerializer):
         if isinstance(flight_info_data, dict) and flight_info_data:
             FlightInformation.objects.create(booking=booking, **flight_info_data)
 
+        # ✅ Mark discount as used for new users
+        if user and not user.new_user_discount_used:
+            user.new_user_discount_used = True
+            user.save()
+            
         return booking
 
     def update(self, instance, validated_data):

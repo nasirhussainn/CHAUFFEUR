@@ -3,7 +3,7 @@ import os
 from django.dispatch import receiver
 
 class Vehicle(models.Model):
-    TYPE_CHOICES = [("SUV", "SUV"), ("sedan", "Sedan")]
+    TYPE_CHOICES = [("SUV", "SUV"), ("sedan", "Sedan"), ("premium-suv", "Premium SUV"), ("sprinter-van", "Sprinter Van")]
 
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     model = models.CharField(max_length=100)
