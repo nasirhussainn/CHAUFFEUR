@@ -114,23 +114,20 @@ class BookingSerializer(serializers.ModelSerializer):
 
         return data
 
-
     def create(self, validated_data):
         request = self.context.get('request')
-        validated_data.pop('user', None)  
+        validated_data.pop('user', None)
         user = request.user if request and request.user.is_authenticated else None
         validated_data['user'] = user
+
         passengers_data = validated_data.pop('passengers')
         stops_data = validated_data.pop('stops', [])
         child_seats_data = validated_data.pop('child_seats', [])
         flight_info_data = validated_data.pop('flight_info', None)
         comments_data = validated_data.pop('comments', [])
 
-        # Extract promo_code manually from request.data since it's a SerializerMethodField
-        request = self.context.get('request')
         promo_code_data = request.data.get('promo_code') if request else None
 
-        # Calculate pricing
         base_price = Decimal(validated_data.get('price', 0))
         child_seat_fee = sum(
             Decimal("40.00") * Decimal(cs.get("quantity", 1)) for cs in child_seats_data
@@ -139,8 +136,17 @@ class BookingSerializer(serializers.ModelSerializer):
         meet_greet_fee = Decimal("50.00") if meet_greet else Decimal("0.00")
 
         subtotal = base_price + child_seat_fee + meet_greet_fee
+
+        # --- Discount logic
+        is_discounted = False
+        if user and not user.new_user_discount_used:
+            subtotal *= Decimal("0.90")  # 10% discount
+            is_discounted = True
+
+        # --- Service fee
         with_service_fee = subtotal * Decimal("1.20")
 
+        # --- Tax
         try:
             tax_record = TaxRate.objects.first()
             tax_percentage = tax_record.rate_percentage if tax_record else Decimal("0.00")
@@ -149,8 +155,11 @@ class BookingSerializer(serializers.ModelSerializer):
 
         tax_amount = with_service_fee * (tax_percentage / Decimal("100.00"))
         final_price = with_service_fee + tax_amount
-        validated_data['price'] = final_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
+        validated_data['price'] = final_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        validated_data['is_discounted'] = is_discounted  
+
+        # --- Create Booking
         booking = Booking.objects.create(**validated_data)
 
         for p in passengers_data:
@@ -166,11 +175,10 @@ class BookingSerializer(serializers.ModelSerializer):
         if isinstance(flight_info_data, dict) and flight_info_data:
             FlightInformation.objects.create(booking=booking, **flight_info_data)
 
-        # ✅ Mark discount as used for new users
-        if user and not user.new_user_discount_used:
+        if user and is_discounted:
             user.new_user_discount_used = True
             user.save()
-            
+
         return booking
 
     def update(self, instance, validated_data):
@@ -242,6 +250,20 @@ class BookingSerializer(serializers.ModelSerializer):
 
             meet_greet_fee = Decimal("50.00") if meet_greet else Decimal("0.00")
             subtotal = base_price + child_seat_fee + meet_greet_fee
+
+            # NEW USER DISCOUNT LOGIC
+            user = instance.user
+            is_discounted = False
+            if hasattr(user, 'new_user_discount_used') and not user.new_user_discount_used:
+                discount_amount = subtotal * Decimal("0.10")
+                subtotal -= discount_amount
+                instance.is_discounted = True
+                user.new_user_discount_used = True
+                user.save()
+                is_discounted = True
+            else:
+                instance.is_discounted = False
+
             with_service_fee = subtotal * Decimal("1.20")
 
             try:

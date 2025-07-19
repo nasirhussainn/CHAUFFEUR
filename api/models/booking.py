@@ -33,5 +33,10 @@ class Booking(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_status = models.BooleanField(default=False)
     number_of_hours = models.PositiveIntegerField(null=True, blank=True)
+    is_discounted = models.BooleanField(
+        default=False,
+        help_text="Indicates whether any discount was applied to this booking."
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
