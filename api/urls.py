@@ -15,7 +15,7 @@ from api.views.user_me_view import UserMeView
 from api.views.logout_view import LogoutView
 from rest_framework_simplejwt.views import TokenRefreshView
 from api.views.payment_view import CreateStripeIntentView, ConfirmPaymentView
-from api.views.contact_message_view import ContactMessageView
+from api.views.contact_message_view import ContactMessageViewSet
 from api.views.review_view import ReviewViewSet
 
 
@@ -27,6 +27,7 @@ router.register(r'service-areas', ServiceAreaViewSet, basename='service-areas')
 router.register(r'tax-rates', TaxRateViewSet, basename='tax-rates')
 router.register(r'contacts', ContactViewSet, basename='contacts')
 router.register(r'reviews', ReviewViewSet, basename='review')
+router.register(r'contact-us', ContactMessageViewSet, basename='contact-us')
 
 urlpatterns = [
     path('auth/register/', UserRegistrationView.as_view(), name='user-register'),
@@ -43,8 +44,6 @@ urlpatterns = [
     
     path('stripe/create-intent/', CreateStripeIntentView.as_view(), name='create-stripe-intent'),
     path('bookings/<int:booking_id>/payment-confirmed/', ConfirmPaymentView.as_view()),
-    
-    path('contact-us/', ContactMessageView.as_view(), name='contact-us'),
     
     path('', include(router.urls)),
 ]
