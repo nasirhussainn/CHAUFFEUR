@@ -12,7 +12,14 @@ class Vehicle(models.Model):
     description = models.TextField()
     luggages = models.PositiveIntegerField()
     passengers = models.PositiveIntegerField()
-    status = models.BooleanField(default=True)  # available or not
+    flat_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Optional flat rate for the ride (overrides calculated price if used)."
+    )
+    status = models.BooleanField(default=True)  
 
 class CarImage(models.Model):
     image = models.ImageField(upload_to='vehicle_images/')

@@ -11,7 +11,7 @@ class VehicleSerializer(serializers.ModelSerializer):
         model = Vehicle
         fields = [
             'id', 'type', 'model', 'price_per_mile', 'price_per_hour',
-            'description', 'luggages', 'passengers', 'status',
+            'description', 'luggages', 'passengers', 'status', 'flat_rate',
             'features', 'images'
         ]
 
