@@ -147,6 +147,20 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
 
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# # SMTP server
+# EMAIL_HOST = 'server1.nwchauffeur.com'
+# EMAIL_PORT = 465  
+# EMAIL_USE_SSL = True  
+# EMAIL_USE_TLS = False  
+# # Credentials for the email account
+# EMAIL_HOST_USER = env('EMAIL_HOST_USER')         
+# EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD') 
+
+# # Default "from" address for outgoing emails
+# DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')  
+
+
 CUSTOM_IMAGE_PORT = env.int('CUSTOM_PORT')
 
 CORS_ALLOW_ALL_ORIGINS = True

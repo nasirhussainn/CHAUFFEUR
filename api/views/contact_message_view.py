@@ -46,3 +46,9 @@ class ContactMessageViewSet(viewsets.ModelViewSet):
         )
         user_email.content_subtype = "html"
         user_email.send()
+
+    def destroy(self, request, *args, **kwargs):
+        response = super().destroy(request, *args, **kwargs)
+        return Response({
+            "message": "Contact message deleted successfully.",
+        }, status=status.HTTP_200_OK)
