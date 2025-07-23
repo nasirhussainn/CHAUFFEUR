@@ -39,8 +39,10 @@ class PasswordResetRequestView(APIView):
                 }
             )
 
-            path = reverse('api:password-reset-confirm') + f'?token={token_obj.token}'
-            reset_url = build_full_url(request, path)
+            # path = reverse('api:password-reset-confirm') + f'?token={token_obj.token}'
+            # reset_url = build_full_url(request, path)
+            reset_url = f"{settings.FRONTEND_ORIGIN}/reset-password?token={token_obj.token}"
+
 
             # Email content
             subject = 'Password Reset Request'
