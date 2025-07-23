@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, generics
 from api.models.review import Review
 from api.serializers.review_serializer import ReviewSerializer
 
@@ -19,3 +19,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
         if user.is_staff:
             return Review.objects.all()
         return Review.objects.filter(user=user)
+
+class TopReviewsView(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.AllowAny]  # Public access
+
+    def get_queryset(self):
+        return Review.objects.order_by('-rating', '-created_at')[:10]

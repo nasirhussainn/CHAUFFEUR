@@ -17,7 +17,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from api.views.payment_view import CreateStripeIntentView, ConfirmPaymentView
 from api.views.contact_message_view import ContactMessageViewSet
 from api.views.review_view import ReviewViewSet
-
+from api.views.review_view import TopReviewsView
 
 router = DefaultRouter()
 router.register(r'vehicles', VehicleViewSet, basename='vehicle')
@@ -44,6 +44,8 @@ urlpatterns = [
     
     path('stripe/create-intent/', CreateStripeIntentView.as_view(), name='create-stripe-intent'),
     path('bookings/<int:booking_id>/payment-confirmed/', ConfirmPaymentView.as_view()),
+    
+    path('reviews/top/', TopReviewsView.as_view(), name='top-reviews'), 
     
     path('', include(router.urls)),
 ]
