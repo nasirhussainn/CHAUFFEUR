@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions, generics
 from api.models.review import Review
-from api.serializers.review_serializer import ReviewSerializer
+from api.serializers.review_serializer import ReviewSerializer, PublicReviewSerializer
 
 # Custom permission
 class IsOwnerOrAdminOrReadOnly(permissions.BasePermission):
@@ -21,7 +21,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return Review.objects.filter(user=user)
 
 class TopReviewsView(generics.ListAPIView):
-    serializer_class = ReviewSerializer
+    serializer_class = PublicReviewSerializer
     permission_classes = [permissions.AllowAny]  # Public access
 
     def get_queryset(self):
