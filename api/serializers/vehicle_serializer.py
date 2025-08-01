@@ -77,18 +77,15 @@ class VehicleSerializer(serializers.ModelSerializer):
             except json.JSONDecodeError:
                 raise serializers.ValidationError({"features": "Must be a valid JSON list of strings."})
 
-            request = self.context.get('request')
-            is_partial = request.method == 'PATCH' if request else False
+            # Always replace features, even for PATCH
+            instance.features.all().delete()
 
-            if not is_partial:
-                # Replace features for PUT
-                instance.features.all().delete()
-
-            # Add new features (no duplicates)
-            existing = set(f.feature for f in instance.features.all())
+            # Add new features (avoid duplicates in input)
+            added = set()
             for f in features:
-                if f not in existing:
+                if f not in added:
                     CarFeature.objects.create(vehicle=instance, feature=f)
+                    added.add(f)
 
         # Add new images (do not delete old ones)
         if images is not None:
@@ -96,3 +93,4 @@ class VehicleSerializer(serializers.ModelSerializer):
                 CarImage.objects.create(vehicle=instance, image=img)
 
         return instance
+
