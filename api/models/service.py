@@ -7,7 +7,7 @@ from utils.slug import generate_unique_slug
 class Service(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     image_cover = models.ImageField(upload_to='services/')
-    image1 = models.ImageField(upload_to='services/')
+    image1 = models.ImageField(upload_to='services/', null=True, blank=True)
     image2 = models.ImageField(upload_to='services/', null=True, blank=True)
     description = models.TextField()
     content = models.JSONField()

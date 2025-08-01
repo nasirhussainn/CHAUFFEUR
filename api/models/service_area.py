@@ -11,7 +11,7 @@ class ServiceArea(models.Model):
     slug = models.SlugField(unique=True, blank=True) 
     area_name = models.CharField(max_length=255)
     description = models.TextField()
-    image1 = models.ImageField(upload_to='service_areas/')
+    image1 = models.ImageField(upload_to='service_areas/', null=True, blank=True)
     image2 = models.ImageField(upload_to='service_areas/', null=True, blank=True)
     content = models.JSONField()
 
