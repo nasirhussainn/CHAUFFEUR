@@ -14,8 +14,6 @@ import uuid
 import traceback
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from utils.url_helpers import build_full_url
-from django.http import HttpResponseRedirect
 
 User = get_user_model()
 
@@ -45,8 +43,8 @@ class UserRegistrationView(APIView):
                             verification.is_verified = False
                             verification.save()
 
-                            path = reverse('api:verify-email') + f'?token={verification.token}'
-                            verification_url = build_full_url(request, path)
+                            # Build frontend verification URL
+                            verification_url = f"{settings.FRONTEND_ORIGIN}/verify-email?token={verification.token}"
 
                             subject = 'Verify your email'
                             from_email = settings.DEFAULT_FROM_EMAIL
@@ -67,8 +65,7 @@ class UserRegistrationView(APIView):
                     expiry = timezone.now() + timedelta(minutes=10)
                     verification = EmailVerification.objects.create(user=user, expiry=expiry)
 
-                    path = reverse('api:verify-email') + f'?token={verification.token}'
-                    verification_url = build_full_url(request, path)
+                    verification_url = f"{settings.FRONTEND_ORIGIN}/verify-email?token={verification.token}"
 
                     subject = 'Verify your email'
                     from_email = settings.DEFAULT_FROM_EMAIL
@@ -88,9 +85,12 @@ class UserRegistrationView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class VerifyEmailView(APIView):
     def get(self, request):
         token = request.GET.get('token')
+        if not token:
+            return Response({"message": "Missing token."}, status=status.HTTP_400_BAD_REQUEST)
         try:
             verification = EmailVerification.objects.get(token=token)
         except EmailVerification.DoesNotExist:
@@ -104,8 +104,7 @@ class VerifyEmailView(APIView):
             verification.expiry = timezone.now() + timedelta(minutes=10)
             verification.save()
 
-            path = reverse('api:verify-email') + f'?token={verification.token}'
-            verification_url = build_full_url(request, path)
+            verification_url = f"{settings.FRONTEND_ORIGIN}/verify-email?token={verification.token}"
 
             subject = 'Verify your email'
             from_email = settings.DEFAULT_FROM_EMAIL
@@ -126,9 +125,8 @@ class VerifyEmailView(APIView):
         user.is_active = True
         user.save()
 
-        # return Response({"message": "Email verified. You can now log in."}, status=status.HTTP_200_OK)
-        return HttpResponseRedirect("https://nwchauffeur.com/login")
-
+        return Response({"message": "Email verified successfully. You can now log in."}, status=status.HTTP_200_OK)
+    
 class UserRegistrationsByPeriodView(APIView):
     def get(self, request):
         period = request.query_params.get('period')
