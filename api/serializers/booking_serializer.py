@@ -129,14 +129,15 @@ class BookingSerializer(serializers.ModelSerializer):
         promo_code_data = request.data.get('promo_code') if request else None
 
         base_price = Decimal(validated_data.get('price', 0))
-        child_seat_fee = sum(
-            Decimal("20.00") * Decimal(cs.get("quantity", 1)) for cs in child_seats_data
-        )
-        meet_greet = flight_info_data.get('meet_and_greet') if isinstance(flight_info_data, dict) else False
-        meet_greet_fee = Decimal("40.00") if meet_greet else Decimal("0.00")
-        stop_fee = Decimal("25.00") * Decimal(len(stops_data))
+        # child_seat_fee = sum(
+        #     Decimal("20.00") * Decimal(cs.get("quantity", 1)) for cs in child_seats_data
+        # )
+        # meet_greet = flight_info_data.get('meet_and_greet') if isinstance(flight_info_data, dict) else False
+        # meet_greet_fee = Decimal("40.00") if meet_greet else Decimal("0.00")
+        # stop_fee = Decimal("25.00") * Decimal(len(stops_data))
 
-        subtotal = base_price + child_seat_fee + meet_greet_fee + stop_fee
+        # subtotal = base_price + child_seat_fee + meet_greet_fee + stop_fee
+        subtotal = base_price
 
         # --- Discount logic
         is_discounted = False
