@@ -81,13 +81,13 @@ class BookingSerializer(serializers.ModelSerializer):
         return None
 
     def get_payment(self, obj):
-            from api.models import Payment
-            try:
-                payment = Payment.objects.get(booking=obj)
-                return PaymentSerializer(payment).data
-            except Payment.DoesNotExist:
-                return None
-            
+        from api.models import Payment
+        try:
+            payment = Payment.objects.get(booking=obj)
+            return PaymentSerializer(payment).data
+        except Payment.DoesNotExist:
+            return None
+
     def validate(self, data):
         type_of_ride = data.get('type_of_ride', '').lower()
         flight_info = data.get('flight_info')
@@ -130,12 +130,13 @@ class BookingSerializer(serializers.ModelSerializer):
 
         base_price = Decimal(validated_data.get('price', 0))
         child_seat_fee = sum(
-            Decimal("40.00") * Decimal(cs.get("quantity", 1)) for cs in child_seats_data
+            Decimal("20.00") * Decimal(cs.get("quantity", 1)) for cs in child_seats_data
         )
         meet_greet = flight_info_data.get('meet_and_greet') if isinstance(flight_info_data, dict) else False
-        meet_greet_fee = Decimal("50.00") if meet_greet else Decimal("0.00")
+        meet_greet_fee = Decimal("40.00") if meet_greet else Decimal("0.00")
+        stop_fee = Decimal("25.00") * Decimal(len(stops_data))
 
-        subtotal = base_price + child_seat_fee + meet_greet_fee
+        subtotal = base_price + child_seat_fee + meet_greet_fee + stop_fee
 
         # --- Discount logic
         is_discounted = False
@@ -157,7 +158,7 @@ class BookingSerializer(serializers.ModelSerializer):
         final_price = with_service_fee + tax_amount
 
         validated_data['price'] = final_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        validated_data['is_discounted'] = is_discounted  
+        validated_data['is_discounted'] = is_discounted
 
         # --- Create Booking
         booking = Booking.objects.create(**validated_data)
@@ -236,7 +237,8 @@ class BookingSerializer(serializers.ModelSerializer):
                 instance.flight_info.delete()
             FlightInformation.objects.create(booking=instance, **flight_info_data)
 
-        if child_seats_data is not None or flight_info_data is not None:
+        # --- Price recalculation when relevant data changes
+        if child_seats_data is not None or flight_info_data is not None or stops_data is not None:
             base_price = Decimal(instance.price or 0)
             child_seat_fee = sum(
                 Decimal("40.00") * Decimal(seat.get("quantity", 1)) for seat in (child_seats_data or [])
@@ -249,7 +251,9 @@ class BookingSerializer(serializers.ModelSerializer):
                 meet_greet = instance.flight_info.meet_and_greet
 
             meet_greet_fee = Decimal("50.00") if meet_greet else Decimal("0.00")
-            subtotal = base_price + child_seat_fee + meet_greet_fee
+            stop_fee = Decimal("25.00") * Decimal(len(stops_data or instance.stops.all()))
+
+            subtotal = base_price + child_seat_fee + meet_greet_fee + stop_fee
 
             # NEW USER DISCOUNT LOGIC
             user = instance.user
