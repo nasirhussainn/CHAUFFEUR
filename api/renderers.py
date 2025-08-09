@@ -5,25 +5,37 @@ class CustomResponseRenderer(JSONRenderer):
         response = renderer_context.get("response")
         status_code = response.status_code if response else 200
 
-        # Base structure
+        # If already in custom error format, return as-is
+        if (
+            isinstance(data, dict)
+            and "success" in data
+            and "error" in data
+        ):
+            return super().render(data, accepted_media_type, renderer_context)
+
+        # If this is an error (status >= 400), wrap in your custom error structure
+        if status_code >= 400:
+            return super().render({
+                "success": False,
+                "error": {
+                    "type": "ValidationError",
+                    "detail": data,
+                }
+            }, accepted_media_type, renderer_context)
+
+        # Base structure for success
         response_data = {
-            "success": 200 <= status_code < 300,
-            "message": "Success" if 200 <= status_code < 300 else "Error"
+            "success": True,
+            "message": "Success"
         }
 
-        # Override message if detail present
         if isinstance(data, dict):
-            if "detail" in data:
-                response_data["message"] = data["detail"]
-            elif "message" in data:
+            if "message" in data:
                 response_data["message"] = data.get("message", response_data["message"])
-
-            # Add `data` field only if other keys exist
-            payload = {k: v for k, v in data.items() if k not in ["detail", "message"]}
+            payload = {k: v for k, v in data.items() if k != "message"}
             if payload:
                 response_data["data"] = payload
         elif data is not None:
-            # Non-dict (e.g. list or string) case
             response_data["data"] = data
 
         return super().render(response_data, accepted_media_type, renderer_context)
