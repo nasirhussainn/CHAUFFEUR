@@ -129,6 +129,7 @@ REST_FRAMEWORK = {
         'api.renderers.CustomResponseRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # Optional for development
     ],
+    'EXCEPTION_HANDLER': 'api.exception_handler.custom_exception_handler',
 }
 
 MEDIA_URL = '/media/'
@@ -188,3 +189,6 @@ STRIPE_PUBLISHABLE_KEY = env('STRIPE_PUBLISHABLE_KEY')
 CONTACT_RECEIVER_EMAIL = env('CONTACT_RECEIVER_EMAIL')
 
 FRONTEND_ORIGIN='https://nwchauffeur.com'
+
+# Ensure URLs without trailing slashes are redirected
+APPEND_SLASH = True
