@@ -241,20 +241,22 @@ class BookingSerializer(serializers.ModelSerializer):
         # --- Price recalculation when relevant data changes
         if child_seats_data is not None or flight_info_data is not None or stops_data is not None:
             base_price = Decimal(instance.price or 0)
-            child_seat_fee = sum(
-                Decimal("40.00") * Decimal(seat.get("quantity", 1)) for seat in (child_seats_data or [])
-            )
 
-            meet_greet = False
-            if flight_info_data and isinstance(flight_info_data, dict):
-                meet_greet = flight_info_data.get("meet_and_greet", False)
-            elif hasattr(instance, 'flight_info'):
-                meet_greet = instance.flight_info.meet_and_greet
+            # child_seat_fee = sum(
+            #     Decimal("40.00") * Decimal(seat.get("quantity", 1)) for seat in (child_seats_data or [])
+            # )
 
-            meet_greet_fee = Decimal("50.00") if meet_greet else Decimal("0.00")
-            stop_fee = Decimal("25.00") * Decimal(len(stops_data or instance.stops.all()))
+            # meet_greet = False
+            # if flight_info_data and isinstance(flight_info_data, dict):
+            #     meet_greet = flight_info_data.get("meet_and_greet", False)
+            # elif hasattr(instance, 'flight_info'):
+            #     meet_greet = instance.flight_info.meet_and_greet
 
-            subtotal = base_price + child_seat_fee + meet_greet_fee + stop_fee
+            # meet_greet_fee = Decimal("50.00") if meet_greet else Decimal("0.00")
+            # stop_fee = Decimal("25.00") * Decimal(len(stops_data or instance.stops.all()))
+
+            # subtotal = base_price + child_seat_fee + meet_greet_fee + stop_fee
+            subtotal = base_price
 
             # NEW USER DISCOUNT LOGIC
             user = instance.user
