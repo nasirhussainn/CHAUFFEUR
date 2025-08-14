@@ -5,34 +5,34 @@ class CustomResponseRenderer(JSONRenderer):
         response = renderer_context.get("response")
         status_code = response.status_code if response else 200
 
-        # If already in custom error format, return as-is
-        if (
-            isinstance(data, dict)
-            and "success" in data
-            and "error" in data
-        ):
-            return super().render(data, accepted_media_type, renderer_context)
-
-        # If this is an error (status >= 400), wrap in your custom error structure
-        if status_code >= 400:
-            return super().render({
-                "success": False,
-                "error": {
-                    "type": "ValidationError",
-                    "detail": data,
-                }
-            }, accepted_media_type, renderer_context)
-
-        # Base structure for success
+        # Base response
         response_data = {
-            "success": True,
-            "message": "Success"
+            "success": 200 <= status_code < 300,
+            "message": "Success" if 200 <= status_code < 300 else "Error"
         }
 
+        # Handle errors more clearly
+        if not (200 <= status_code < 300) and isinstance(data, dict):
+            if "detail" in data:
+                response_data["message"] = str(data["detail"])
+            elif "message" in data:
+                response_data["message"] = str(data.get("message"))
+            else:
+                # Build a user-friendly combined message
+                error_messages = []
+                for field, errors in data.items():
+                    field_name = field.replace("_", " ").capitalize()
+                    if isinstance(errors, (list, tuple)):
+                        for err in errors:
+                            error_messages.append(f"{field_name}: {err}")
+                    else:
+                        error_messages.append(f"{field_name}: {errors}")
+                if error_messages:
+                    response_data["message"] = "Error: " + "; ".join(error_messages)
+
+        # Keep 'data' for developers
         if isinstance(data, dict):
-            if "message" in data:
-                response_data["message"] = data.get("message", response_data["message"])
-            payload = {k: v for k, v in data.items() if k != "message"}
+            payload = {k: v for k, v in data.items() if k not in ["detail", "message"]}
             if payload:
                 response_data["data"] = payload
         elif data is not None:
