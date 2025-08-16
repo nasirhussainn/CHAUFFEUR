@@ -129,7 +129,6 @@ REST_FRAMEWORK = {
         'api.renderers.CustomResponseRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # Optional for development
     ],
-    'EXCEPTION_HANDLER': 'api.exception_handler.custom_exception_handler',
 }
 
 MEDIA_URL = '/media/'
@@ -138,28 +137,29 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 AUTH_USER_MODEL = 'api.User'
 
 # Email configuration (read from environment variables)
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_HOST = 'smtp.gmail.com'
+#EMAIL_PORT = 587
+#EMAIL_USE_TLS = True
+#EMAIL_USE_SSL = False
+
+#EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+#EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+#DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
+
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-
-EMAIL_HOST_USER = env('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
-
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# # SMTP server
-# EMAIL_HOST = 'server1.nwchauffeur.com'
-# EMAIL_PORT = 465  
-# EMAIL_USE_SSL = True  
-# EMAIL_USE_TLS = False  
-# # Credentials for the email account
-# EMAIL_HOST_USER = env('EMAIL_HOST_USER')         
-# EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD') 
+# SMTP server
+EMAIL_HOST = 'mail.privatetowncar.com'
+EMAIL_PORT = 465  
+EMAIL_USE_SSL = True  
+EMAIL_USE_TLS = False  
+# Credentials for the email account
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')         
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD') 
 
 # # Default "from" address for outgoing emails
-# DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')  
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')  
 
 
 CUSTOM_IMAGE_PORT = env.int('CUSTOM_PORT')
@@ -189,6 +189,3 @@ STRIPE_PUBLISHABLE_KEY = env('STRIPE_PUBLISHABLE_KEY')
 CONTACT_RECEIVER_EMAIL = env('CONTACT_RECEIVER_EMAIL')
 
 FRONTEND_ORIGIN='https://nwchauffeur.com'
-
-# Ensure URLs without trailing slashes are redirected
-APPEND_SLASH = True
