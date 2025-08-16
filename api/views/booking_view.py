@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from api.pagination import DynamicPageNumberPagination
 
 class BookingViewSet(viewsets.ModelViewSet):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
     pagination_class = DynamicPageNumberPagination
@@ -24,11 +24,21 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='cancel')
     def cancel_booking(self, request, pk=None):
         booking = self.get_object()
+        user = request.user
 
-        if timezone.now() > booking.created_at + timedelta(hours=24):
-            return Response({
-                "message": "Cancellation not allowed after 24 hours. 100% charge applies."
-            }, status=status.HTTP_403_FORBIDDEN)
+        # If user is not admin, check cancellation window
+        if not (user.is_staff or user.is_superuser):
+            vehicle_type = getattr(booking.vehicle, 'type', '').lower()
+            if vehicle_type == 'sprinter-van':
+                if timezone.now() > booking.created_at + timedelta(hours=72):
+                    return Response({
+                        "message": "Cancellation for Sprinter Van bookings not allowed after 72 hours. 100% charge applies."
+                    }, status=status.HTTP_403_FORBIDDEN)
+            else:
+                if timezone.now() > booking.created_at + timedelta(hours=24):
+                    return Response({
+                        "message": "Cancellation not allowed after 24 hours. 100% charge applies."
+                    }, status=status.HTTP_403_FORBIDDEN)
 
         booking.status = "canceled"
         booking.save()
@@ -102,22 +112,32 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='confirm')
     def confirm_booking(self, request, pk=None):
         booking = self.get_object()
+        user = request.user
+        # confirm_param = request.query_params.get('confirm', 'false').lower()
+        # confirm_flag = confirm_param == 'true'
+
+        if not (user.is_staff or user.is_superuser):
+            return Response({
+                "message": "Only admins can confirm bookings."
+            }, status=status.HTTP_403_FORBIDDEN)
 
         if booking.status != 'pending':
             return Response({
                 "message": "Only pending bookings can be confirmed."
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        if not booking.payment_status:
-            return Response({
-                "message": "Booking cannot be confirmed because payment is not completed."
-            }, status=status.HTTP_400_BAD_REQUEST)
-
+        # if not booking.payment_status:
+        #     if not confirm_flag:
+        #         return Response({
+        #             "message": "Warning: You are about to confirm a booking without completed payment. Please confirm to proceed."
+        #         }, status=status.HTTP_400_BAD_REQUEST)
+        # If confirm=true or payment is done, proceed
         booking.status = "confirmed"
         booking.save()
         return Response({
             "message": "Booking has been confirmed successfully."
         }, status=status.HTTP_200_OK)
+
     
     @action(detail=True, methods=['post'], url_path='complete') 
     def complete_booking(self, request, pk=None):
