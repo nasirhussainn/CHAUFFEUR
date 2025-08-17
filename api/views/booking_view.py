@@ -25,27 +25,33 @@ class BookingViewSet(viewsets.ModelViewSet):
     def cancel_booking(self, request, pk=None):
         booking = self.get_object()
         user = request.user
+        now = timezone.now()
 
-        # If user is not admin, check cancellation window
+        # If user is not admin, enforce cancellation windows
         if not (user.is_staff or user.is_superuser):
             vehicle_type = getattr(booking.vehicle, 'type', '').lower()
-            if vehicle_type == 'sprinter-van':
-                if timezone.now() > booking.created_at + timedelta(hours=72):
+            vehicle_model = getattr(booking.vehicle, 'model', '').lower()
+
+            # Check for Mercedes Sprinter Van
+            if vehicle_type == 'sprinter-van' and 'mercedes' in vehicle_model:
+                if now > booking.pickup_datetime - timedelta(hours=72):
                     return Response({
-                        "message": "Cancellation for Sprinter Van bookings not allowed after 72 hours. 100% charge applies."
+                        "message": "Cancellation for Mercedes Sprinter Van bookings must be made at least 72 hours before pickup. 100% charge applies."
                     }, status=status.HTTP_403_FORBIDDEN)
             else:
-                if timezone.now() > booking.created_at + timedelta(hours=24):
+                if now > booking.pickup_datetime - timedelta(hours=24):
                     return Response({
-                        "message": "Cancellation not allowed after 24 hours. 100% charge applies."
+                        "message": "Cancellation must be made at least 24 hours before pickup. 100% charge applies."
                     }, status=status.HTTP_403_FORBIDDEN)
 
+        # Proceed with cancellation
         booking.status = "canceled"
-        booking.save()
+        booking.save(update_fields=["status", "updated_at"])
+
         return Response({
             "message": "Booking has been successfully canceled."
         }, status=status.HTTP_200_OK)
-
+    
     @action(detail=False, methods=['get'], url_path='by-status')
     def bookings_by_status(self, request):
         status_param = request.query_params.get('status')
