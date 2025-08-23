@@ -185,10 +185,26 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if validated_data.get('status') == 'canceled':
-            if instance.created_at and instance.created_at < timezone.now() - timezone.timedelta(hours=24):
-                raise serializers.ValidationError({
-                    "status": "Cannot cancel after 24 hours. Full charge applies."
-                })
+            now = timezone.now()
+            request = self.context.get('request')
+            user = request.user if request else None
+
+            # If user is not admin, enforce cancellation windows
+            if not (user and (user.is_staff or user.is_superuser)):
+                vehicle_type = getattr(instance.vehicle, 'type', '').lower()
+                vehicle_model = getattr(instance.vehicle, 'model', '').lower()
+
+                # Check for Mercedes Sprinter Van
+                if vehicle_type == 'sprinter-van' and 'mercedes' in vehicle_model:
+                    if now > instance.pickup_datetime - timedelta(hours=72):
+                        raise serializers.ValidationError({
+                            "status": "Cancellation for Mercedes Sprinter Van bookings must be made at least 72 hours before pickup. 100% charge applies."
+                        })
+                else:
+                    if now > instance.pickup_datetime - timedelta(hours=24):
+                        raise serializers.ValidationError({
+                            "status": "Cancellation must be made at least 24 hours before pickup. 100% charge applies."
+                        })
 
         request = self.context.get('request')
         is_partial = request and request.method == 'PATCH'
