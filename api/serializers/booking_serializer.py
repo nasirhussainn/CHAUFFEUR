@@ -62,7 +62,7 @@ class FlightInfoSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    passengers = PassengerSerializer(many=True)
+    passengers = PassengerSerializer(many=True, required=False)  # Made optional for PATCH
     stops = StopSerializer(many=True, required=False)
     child_seats = ChildSeatSerializer(many=True, required=False)
     promo_code = serializers.SerializerMethodField()
@@ -89,28 +89,37 @@ class BookingSerializer(serializers.ModelSerializer):
             return None
 
     def validate(self, data):
-        type_of_ride = data.get('type_of_ride', '').lower()
+        # Only validate type_of_ride if it's being provided in the request
+        if 'type_of_ride' in data:
+            type_of_ride_raw = data.get('type_of_ride', '').strip()
+            type_of_ride = type_of_ride_raw.lower().replace('_', '-')  # Convert underscores to hyphens
+            
+            ALLOWED_RIDES = [
+                'from-airport', 'to-airport', 'point-to-point', 'hourly-as-directed',
+                'wine-tour', 'tour', 'prom', 'weddings'
+            ]
+
+            if type_of_ride not in ALLOWED_RIDES:
+                raise serializers.ValidationError({
+                    "type_of_ride": f"Invalid ride type. Must be one of: {', '.join(ALLOWED_RIDES)}"
+                })
+        else:
+            # For updates, get the existing type_of_ride from the instance
+            type_of_ride = getattr(self.instance, 'type_of_ride', '').lower() if self.instance else ''
+
         flight_info = data.get('flight_info')
 
-        ALLOWED_RIDES = [
-            'from-airport', 'to-airport', 'point-to-point', 'hourly-as-directed',
-            'wine-tour', 'tour', 'prom', 'weddings'
-        ]
+        # Only validate flight_info rules if type_of_ride is being set or updated
+        if 'type_of_ride' in data or flight_info is not None:
+            if type_of_ride != 'from-airport' and flight_info:
+                raise serializers.ValidationError({
+                    "flight_info": "Flight information is only allowed for 'from-airport' bookings."
+                })
 
-        if type_of_ride not in ALLOWED_RIDES:
-            raise serializers.ValidationError({
-                "type_of_ride": f"Invalid ride type. Must be one of: {', '.join(ALLOWED_RIDES)}"
-            })
-
-        if type_of_ride != 'from-airport' and flight_info:
-            raise serializers.ValidationError({
-                "flight_info": "Flight information is only allowed for 'from-airport' bookings."
-            })
-
-        if type_of_ride == 'from-airport' and not flight_info:
-            raise serializers.ValidationError({
-                "flight_info": "Flight information is required for 'from-airport' bookings."
-            })
+            if type_of_ride == 'from-airport' and flight_info is not None and not flight_info:
+                raise serializers.ValidationError({
+                    "flight_info": "Flight information is required for 'from-airport' bookings."
+                })
 
         return data
 
@@ -209,26 +218,27 @@ class BookingSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         is_partial = request and request.method == 'PATCH'
 
-        passengers_data = validated_data.pop('passengers', None)
-        stops_data = validated_data.pop('stops', None)
-        child_seats_data = validated_data.pop('child_seats', None)
-        promo_code_data = request.data.get('promo_code') if request else None
-        flight_info_data = validated_data.pop('flight_info', None)
-        comments_data = validated_data.pop('comments', None)
+        # Only extract nested data if it's actually present in the request
+        passengers_data = validated_data.pop('passengers', None) if 'passengers' in validated_data else None
+        stops_data = validated_data.pop('stops', None) if 'stops' in validated_data else None
+        child_seats_data = validated_data.pop('child_seats', None) if 'child_seats' in validated_data else None
+        promo_code_data = request.data.get('promo_code') if request and 'promo_code' in request.data else None
+        flight_info_data = validated_data.pop('flight_info', None) if 'flight_info' in validated_data else None
+        comments_data = validated_data.pop('comments', None) if 'comments' in validated_data else None
 
+        # Update main booking fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
+        # Only update nested relationships if they were included in the request
         if passengers_data is not None:
-            if not is_partial:
-                instance.passengers.all().delete()
+            instance.passengers.all().delete()
             for p in passengers_data:
                 Passenger.objects.create(booking=instance, **p)
 
         if stops_data is not None:
-            if not is_partial:
-                instance.stops.all().delete()
+            instance.stops.all().delete()
             for s in stops_data:
                 Stop.objects.create(booking=instance, **s)
 
@@ -238,12 +248,11 @@ class BookingSerializer(serializers.ModelSerializer):
                 ChildSeat.objects.create(booking=instance, **seat)
 
         if comments_data is not None:
-            if not is_partial:
-                instance.comments.all().delete()
+            instance.comments.all().delete()
             for c in comments_data:
                 Comment.objects.create(booking=instance, **c)
 
-        if promo_code_data:
+        if promo_code_data is not None:
             PromoCode.objects.update_or_create(
                 booking=instance,
                 defaults={"promo_code": promo_code_data}
@@ -255,7 +264,12 @@ class BookingSerializer(serializers.ModelSerializer):
             FlightInformation.objects.create(booking=instance, **flight_info_data)
 
         # --- Price recalculation when relevant data changes
-        if child_seats_data is not None or flight_info_data is not None or stops_data is not None:
+        # Only recalculate if price-affecting fields were actually updated
+        if (child_seats_data is not None or 
+            flight_info_data is not None or 
+            stops_data is not None or
+            'price' in validated_data):
+            
             base_price = Decimal(instance.price or 0)
 
             # child_seat_fee = sum(

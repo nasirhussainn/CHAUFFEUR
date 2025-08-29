@@ -5,7 +5,7 @@ from django.utils import timezone
 from datetime import timedelta
 from api.models import Booking
 from api.serializers.booking_serializer import BookingSerializer
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from api.pagination import DynamicPageNumberPagination
 
 class BookingViewSet(viewsets.ModelViewSet):
@@ -14,6 +14,12 @@ class BookingViewSet(viewsets.ModelViewSet):
     serializer_class = BookingSerializer
     pagination_class = DynamicPageNumberPagination
 
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            # Allow guest to create or update without token
+            return [AllowAny()]
+        return [IsAuthenticated()]
+    
     def get_queryset(self):
         queryset = Booking.objects.all()
         user_id = self.request.query_params.get('user_id')
