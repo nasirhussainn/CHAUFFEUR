@@ -15,10 +15,10 @@ class BookingViewSet(viewsets.ModelViewSet):
     pagination_class = DynamicPageNumberPagination
 
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update']:
-            # Allow guest to create or update without token
-            return [AllowAny()]
-        return [IsAuthenticated()]
+        # if self.action in ['create', 'update', 'partial_update']:
+        #     # Allow guest to create or update without token
+        return [AllowAny()]
+        # return [IsAuthenticated()]
     
     def get_queryset(self):
         queryset = Booking.objects.all()
