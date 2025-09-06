@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f8f9fa; padding: 30px; }
+    .container {
+      max-width: 600px;
+      background: #ffffff;
+      padding: 25px 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    h2 { color: #333333; }
+    .info {
+      margin: 15px 0;
+    }
+    .info strong {
+      display: inline-block;
+      width: 160px;
+      color: #555555;
+    }
+    .footer {
+      font-size: 12px;
+      color: #999999;
+      margin-top: 30px;
+      border-top: 1px solid #eee;
+      padding-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Hello {{ first_name }} {{ last_name }},</h2>
+    <p>Thank you for requesting a quote. We’ve received your request and will get back to you shortly.</p>
+
+    <div class="info">
+      <p><strong>Reference Number:</strong> {{ reference }}</p>
+      <p><strong>Vehicle:</strong> {{ vehicle.type }} - {{ vehicle.model }}</p>
+      <p><strong>Status:</strong> {{ status }}</p>
+    </div>
+
+    <p>We appreciate your interest in our services.</p>
+
+    <div class="footer">
+      <p>Best regards,<br>The Chauffeur Team</p>
+    </div>
+  </div>
+</body>
+</html>

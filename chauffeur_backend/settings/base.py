@@ -129,6 +129,7 @@ REST_FRAMEWORK = {
         'api.renderers.CustomResponseRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # Optional for development
     ],
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"]
 }
 
 MEDIA_URL = '/media/'

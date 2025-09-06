@@ -18,6 +18,7 @@ from api.views.payment_view import CreateStripeIntentView, ConfirmPaymentView
 from api.views.contact_message_view import ContactMessageViewSet
 from api.views.review_view import ReviewViewSet
 from api.views.review_view import TopReviewsView
+from api.views.quote_request_view import QuoteRequestCreateView, QuoteRequestDetailView, QuoteRequestListView
 
 router = DefaultRouter()
 router.register(r'vehicles', VehicleViewSet, basename='vehicle')
@@ -46,6 +47,10 @@ urlpatterns = [
     path('bookings/<int:booking_id>/payment-confirmed/', ConfirmPaymentView.as_view()),
     
     path('reviews/top/', TopReviewsView.as_view(), name='top-reviews'), 
+    
+    path("quotes/create/", QuoteRequestCreateView.as_view(), name="quote-create"),
+    path("quotes/", QuoteRequestListView.as_view(), name="quote-list"),
+    path("quotes/<int:pk>/", QuoteRequestDetailView.as_view(), name="quote-detail"),
     
     path('', include(router.urls)),
 ]
